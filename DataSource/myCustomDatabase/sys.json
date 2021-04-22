@@ -1,0 +1,48 @@
+{
+    "containers":{
+        "sales":{
+            "description": "Container for all sales department data"
+        },
+        "cust":{
+            "description": "Container for all customer data"
+        }
+    },
+    "tables": {
+        "tblMonthlySales": {
+            "description": "This table contains the monthly sales data",
+            "container": "sales"
+        },
+        "tblDailySales":{
+            "description": "This table contains the daily sales data",
+            "container": "sales"
+        },
+        "tblCustomer": {
+            "description": "This table contains customer information",
+            "tableParts": [
+                "tblCustomer_001.json",
+                "tblCustomer_002.json"
+            ],
+            "container": "cust"
+        }
+    },
+    "columns":{
+        "tblMonthlySales":[
+            {"name":"id", "type":"int", "description":"Row identifier"},
+            {"name":"month", "type":"int", "description":"Month of the year"},
+            {"name":"year", "type":"int", "description":"Year"},
+            {"name":"sales", "type":"decimal", "precision":2, "length":15, "description":"The aggregate sales for the month"}
+        ],
+        "tblDailySales":[
+            {"name":"id", "type":"int", "description":"Row identifier"},
+            {"name":"month", "type":"int", "description":"Month of the year"},
+            {"name":"daily", "type":"int", "description":"Day of the month"},
+            {"name":"year", "type":"int", "description":"Year"},
+            {"name":"sales", "type":"decimal", "precision":2, "length":15, "description":"The aggregate sales for the day"}
+        ],
+        "tblCustomer":[
+            {"name":"id", "type":"int", "description":"Customer identifier"},
+            {"name":"first_name", "type":"string", "description":"The customer's first name"},
+            {"name":"last_name", "type":"string", "description":"The customer's last name"}
+        ]
+    }
+}

@@ -1,0 +1,7 @@
+tblDailySales=(READ,tblDailySales,id,month,day,year,sales)
+
+A=(ALIAS,tblDailySales)
+intermediate=(PROJECT,A,month,year,sales)
+aggregate=(GROUPED_SUM,intermediate,sales,month,year)
+
+@@OUTPUT=(WRITE,tblMonthlySales,aggregate)
