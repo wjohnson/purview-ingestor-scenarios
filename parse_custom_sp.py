@@ -1,4 +1,7 @@
-import os 
+import json
+import os
+import re
+
 from pyapacheatlas.core import AtlasEntity, AtlasProcess
 from pyapacheatlas.core.util import GuidTracker
 from pyapacheatlas.auth import ServicePrincipalAuthentication
@@ -14,23 +17,41 @@ client = PurviewClient(
     authentication=oauth
 )
 
+# This sample demonstrates how you would parse a fictional database's
+# stored procedure logic by parsing the actual text and constructing
+# the Atlas Entities.
+# The goal is to show how you need to be able to understand your databases'
+# syntax.  However, this is not a full lexer / parser. If you're going
+# to get serious about this, there are lots of great tutorials out there.
 
-"""
-This is a sample of how you might parse a custom script
-used in your data store and translate it to Atlas Entities.
-"""
+# The steps are primarily:
+## Create the relevant custom types to represent your data source's types.
+## Get the content of your stored procedure
+## Parse the various commands to determine the inputs and outputs
+## Create an Atlas Process to represent your stored procedure
+## Massage the inputs and outputs into Atlas Entities
+## Upload the entities
 
-import json
-import re
-
+# First, I need to read in a stored process. In my case, I just have a
+# file but you might have to query your stored proc through your data source
 with open('./DataSource/myCustomDatabase/sp_transform_job.custom') as fp:
     script = fp.readlines()
 
-
+# My custom database allows for aliasing datasets so my script needs
+# to be able to identify this alias.
 ALIASES = dict()
+# I'm going to hold all of the inputs, outputs, and intermediate datasets
+# in this variable so I can iterate over it and later create all of the
+# Atlas Entities.
 DATASETS = {
 }
 
+# Now I have to actually parse each line of the script.
+# All of this parsing is completely CUSTOM to my data source / stored proc syntax.
+# As a result, the actual processing done here is likely not useful to you but
+# you can use the concepts / steps in your own implementation.
+
+# I will iterate over each line (and include a line number for debugging)
 for rownum, line in enumerate(script):
     if line == "" or line == "\n":
         continue
@@ -56,6 +77,8 @@ for rownum, line in enumerate(script):
             output = ALIASES[arg]
         input_arguments.append(output)
 
+    # Now that I have the functions and operations parsed out, I
+    # need to write code on how to handle each function!
     if function_argument == "ALIAS":
         # Example: X=(ALIAS,myTable)
         # X is our variable and myTable is our first input argument
@@ -92,29 +115,37 @@ for rownum, line in enumerate(script):
         raise NotImplementedError(
             "Line {}: Function {} is not supported".format(rownum, function_argument))
 
-
-# Now that we've parsed the script, we can create the entities
+# Printing out the parsed content of the stored proc for debugging
+print("Parsed content from stored procedure:")
 print(json.dumps(DATASETS, indent=2))
 
-# Creating a Process
+# Now that I've parsed the script, I can create the entities
+# Creating a Process to represent the stored proc
+# I will start by setting up a guidtracker to generate unique
+# "dummy guids" (negative numbers) that coordinate our upload
+# to purview.
 gt = GuidTracker()
 
-PROCESS_TYPE_NAME = "demo_process"
-TABLE_TYPE_NAME = "demo_table"
-COLUMN_TYPE_NAME = "demo_column"
+# I'm also going to include a reference to the type names I'll
+# be using. 
+PROCESS_TYPE_NAME = "my_custom_db_sp"
+TABLE_TYPE_NAME = "my_custom_db"
+COLUMN_TYPE_NAME = "my_custom_db_column"
 
+# Now I create a list that will be used for storing our entities
 entities = []
+# This process will represent the stored procedure as part of the lineage of these tables
 proc = AtlasProcess(
+    # You should programmatically generate this
     name="sp_transform_job.custom",
     guid=gt.get_guid(),
+    # You should programmatically generate this
     qualified_name="custom://sp_transform_job.custom",
     typeName=PROCESS_TYPE_NAME,
     inputs=[],
     outputs=[],
     attributes={}
 )
-
-
 
 # Now that we have parsed the proprietary code of this data source
 # We need to iterate over the results: .items() gives both the key
@@ -149,7 +180,9 @@ for table, current_table_definition in DATASETS.items():
     _tbl = AtlasEntity(
         name=table_name,
         guid=gt.get_guid(),
-        qualified_name="custom://{}".format(table_name), # Your qualified name pattern may include server, database, container, etc
+        # Your qualified name pattern may include server, database, container, etc. 
+        # You should plan this out carefully.
+        qualified_name="custom://{}".format(table_name), 
         typeName=TABLE_TYPE_NAME,
         attributes={}  # Add any custom attributes
     )
@@ -162,9 +195,17 @@ for table, current_table_definition in DATASETS.items():
             _c = AtlasEntity(
                 name=col,
                 guid=gt.get_guid(),
+                # Your qualified name pattern may include server, database, container, etc. 
+                # You should plan this out carefully.
+                # Typically, it's <table qualified name>#<column name> for columns
                 qualified_name="custom://{}#{}".format(table_name, col),
                 typeName=COLUMN_TYPE_NAME,
-                attributes={} # Capture some additional attributes here from your script
+                # Capture some additional attributes here from your script
+                attributes={
+                    # I'm passing in a default of string, but your code
+                    # should pass in the real type!
+                    "type": "string"
+                } 
             )
             # Add a relationship attribute that connects the column to the table
             # This "table" relationship attribute must be defined in your 
@@ -177,10 +218,11 @@ for table, current_table_definition in DATASETS.items():
     else:
         proc.addInput(_tbl)
 
+# Finally, we add the process entity to our list of entities to upload
 entities.append(proc)
 
-print(entities)
-    
+# Perform the upload and go!
 results = client.upload_entities(entities)
 
+# Print out the results
 print(json.dumps(results,indent=2))
