@@ -1,0 +1,21 @@
+{
+    "name": "my-job",
+    "lastRun": "yesterday",
+    "inputs": [
+        {
+            "name": "tblDailySales",
+            "type": "customDB"
+        },
+        {
+            "name": "tblCustomer",
+            "type": "customDB"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "myblob",
+            "path": "https://demosa.blob.core.windows.net/mycontainer/blob/path",
+            "type": "blob"
+        }
+    ]
+}

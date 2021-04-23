@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<job>
+    <node type="join" id="start">
+        <inputs>
+            <input>tblDailySales</input>
+            <input>tblCustomer</input>
+        </input>
+    </node>
+    <node type="projection", id="step01">
+        <columns>
+            <column>
+                <sourceName>customerId</sourceName>
+                <targetName>customerId</targetName>
+            </column>
+            <column>
+                <sourceName>lastName</sourceName>
+                <targetName>lastName</targetName>
+            </column>
+            <column>
+                <sourceName>sales</sourceName>
+                <targetName>dailySales</targetName>
+            </column>
+        </columns>
+        <dependsOn>
+            <step>start</step>
+        </dependsOn>
+    </node>
+    <node type="sink", id="step002">
+        <output type="blob">
+        https://demosa.blob.core.windows.net/mycontainer/blob/path
+        </output>
+        <dependsOn>
+            <step>step001</step>
+        </dependsOn>
+    </node>
+</job>
