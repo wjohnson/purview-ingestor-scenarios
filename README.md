@@ -1,5 +1,7 @@
 # Creating Your Own Purview Custom Connector
 
+This sample provides several examples and tips on creating your own custom connector / "ingestor" for an unsupported data source or etl tool that you would like to see in Azure Purview.  All of the examples are on a fictional data source or etl tool and serve only as a way to illustrate how you *might* go about this process. The solutions provided are not production ready and should be considered for inspirational purposes only.
+
 ## Decision Tree / Summary
 
 * Plan your custom types
@@ -44,3 +46,15 @@ If your ETL tool does NOT provide an API for you to use, you may need to parse t
 ## When You Don't Want to Code Anything
 
 A completely valid solution is to avoid writing any code. Often, ETL teams are already capturing this lineage information in Excel spreadsheets. As a result, you might use the Purview REST API to load data based on a spreadsheet. There are several [PyApacheAtlas samples for Excel](https://github.com/wjohnson/pyapacheatlas/tree/master/samples/excel) that take advantage of its [Excel Template and Parsing features](https://github.com/wjohnson/pyapacheatlas/wiki/Excel-Template-and-Configuration).
+
+## Scheduling your Ingestor and Production Tips
+
+Since this is your ingestor, you are responsible for creating a schedule and automating that ingestion.  Windows Task Scheduler and Crontab are two options you should consider.
+
+* [Windows Task Scheduler](https://docs.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-start-page)
+* [Linux Crontab](https://help.ubuntu.com/community/CronHowto)
+
+In addition, you should consider a few additional steps to make sure your ingestor is production ready.
+
+* Watermarking: Consider maintaining state in Azure Blob Storage, Azure SQL DB, on a local database with backups. This state would indicate where your previous scan left off so that you don't have to waste time scanning every asset over and over again.
+* Storing secrets: Consider using a service like Azure Key Vault to house your service principal credentials. Enabling an Azure VM to access the Key Vault and pull down the Service Principals' credentials may be a better solution than storing the credentials in plain text as environment variables as in these examples.
