@@ -16,6 +16,31 @@
 * Consider using an Excel upload when you can't invest in writing code
 
 ## Planning your Custom Types
+The first thing to consider is your **qualified name** pattern. In many of the Azure built-in types, they follow either a URL pattern (as in blob storage's qualified name is just its full URL path) or there is some hierarchy that is prefixed by a type identifier (e.g. mssql://server.database.schema.table#column).
 
+It's important to be able to programmatically generate your qualified name from an operations perspective. You'll often need to use the qualified name to uniquely identify an entity. Otherwise you'd have to look up the guid each time or carefully search for the entity.
 
-## Data Source
+Once you have your qualified name pattern decided, you'll need to determine:
+* How many types are you capturing (server, database, schema, table, column or just the table)?
+* What attributes you want to capture for each type (especially required attributes)?
+* What "relationships" you want to establish between types (e.g. representing a table and columns relationship or a server and database relationship)?
+
+After designing those entity types and relationship types, upload them to your Purview account and you're now ready for feeding custom entities to Purview. For an example of this, see `custom_types_for_ingestor.py`.
+
+## Extract from a Data Source
+
+In the best case, your data source has some system table that you can query and extract the relevant metadata from (table names, columns, any hierarchical relationships you want to cover). See `parse_datasource_sys_table.py` for a fictional example of this.
+
+In the worst case, you'll need to crawl your data source (like a file system) yourself.
+
+In addition, if you have any custom querying tool built into your data source (like a stored procedure in a database), you'll need to figure out how to parse that code or read its execution history. See `parse_custom_sp.py` for a fictional example of this.
+
+## Extract from an ETL Tool
+
+In the best case, your ETL tool has a built-in API that you can extract data programmatically. In this case, it's probably a good idea to mirror your types based on their API. In addition, you need to determine if you're going to capture only physical tables or you want to capture intermediate steps (see Purview sample for Workflow Process steps as an option). See `parse_etlserver_api.py` for a fictional example of this.
+
+If your ETL tool does NOT provide an API for you to use, you may need to parse the scripts that are generated from its UI. Perhaps these are some SQL scripts or in a proprietary format. In either case, you'll need to parse the job's file and determine inputs and outputs for the job. See `parse_etlserver_jobfile.py` for a fictional example of this.
+
+## When You Don't Want to Code Anything
+
+A completely valid solution is to avoid writing any code. Often, ETL teams are already capturing this lineage information in Excel spreadsheets. As a result, you might use the Purview REST API to load data based on a spreadsheet. There are several [PyApacheAtlas samples for Excel](https://github.com/wjohnson/pyapacheatlas/tree/master/samples/excel) that take advantage of its [Excel Template and Parsing features](https://github.com/wjohnson/pyapacheatlas/wiki/Excel-Template-and-Configuration).
