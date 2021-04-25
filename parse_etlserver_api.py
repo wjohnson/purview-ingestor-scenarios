@@ -59,8 +59,7 @@ print()
 
 # I'm also going to include a reference to the type names I'll
 # be using. 
-PROCESS_TYPE_NAME = "demo_process"
-TABLE_TYPE_NAME = "demo_table"
+PROCESS_TYPE_NAME = "my_custom_etl_job"
 
 # Now I am in the Atlas Entities / Purview space!
 # I will start by setting up a guidtracker to generate unique
